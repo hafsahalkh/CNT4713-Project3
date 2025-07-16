@@ -178,18 +178,50 @@ public class mydns {
     }
 
     // TODO: VICTORIA Implement this method to parse a single resource record
-    // Should parse NAME, TYPE, CLASS, TTL, RDLENGTH, and RDATA
     public static ResourceRecord parseResourceRecord(int index, byte[] response) {
-        // TODO: Parse resource record starting at index
-        // Return ResourceRecord object with parsed data
-        return null;
-    }
+        
+        NameResult nameResult = parseName(index, response); //using the index and response to parse the name
+        String name = nameResult.name; //storing the name result
+        int currentIndex = nameResult.nextIndex; //storing the current index
+    
+        NumberResult typeResult = parseUnsignedInt(currentIndex, 2, response); //using the current index, 2 bytes, and the response to parse the type
+        int type = (int) typeResult.number;//storing the result
+        currentIndex = typeResult.nextIndex;//updating the current index
+    
+        NumberResult classResult = parseUnsignedInt(currentIndex, 2, response); //using the current index, 2 bytes, and the response to parse the class
+        int rrClass = (int) classResult.number;//storing the parsed class
+        currentIndex = classResult.nextIndex;//updating the current index
+    
+        NumberResult ttlResult = parseUnsignedInt(currentIndex, 4, response); //using the current index, 4 bytes, and the response to parse ttl
+        long ttl = ttlResult.number;//storing the parsed ttl 
+        currentIndex = ttlResult.nextIndex; //updating the current index
+    
+        NumberResult rdLengthResult = parseUnsignedInt(currentIndex, 2, response);//using the current index, 2 bytes, and response to parse rd length
+        int rdLength = (int) rdLengthResult.number;//storing the parsed rdlength
+        currentIndex = rdLengthResult.nextIndex;//updating the current index
+    
+        byte[] rdata = new byte[rdLength];//creating new array using rdlength as the size
+        
+        for (int i = 0; i < rdLength; i++) { //copying bytes from the response into the array
+            rdata[i] = response[currentIndex + i];
+        }
+    
+        ResourceRecord resourceRecord = new ResourceRecord(name, type, rrClass, ttl, rdLength, rdata);//creating object
+        return resourceRecord;//returning resourceRecord
+}
 
     // TODO: VICTORIA Implement this method to parse all resource records in a section
     public static List<ResourceRecord> parseResourceRecords(int index, int count, byte[] response) {
-        // TODO: Parse 'count' number of resource records starting at index
-        // Return list of ResourceRecord objects and update index
-        return null;
+        List<ResourceRecord> records = new ArrayList<>();//creating records array list
+        int currentIndex = index;//creating current index value
+        
+        for (int i = 0; i < count; i++) { //for loop to parse using current index and response and then add then add to the array list
+            ResourceRecord record = parseResourceRecord(currentIndex, response);
+            records.add(record);
+            currentIndex = // still need to calculate next index****;
+        }
+        
+        return records;
     }
 
     // TODO: VICTORIA Implement this method to convert IP address from RDATA to string format
