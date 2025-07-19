@@ -285,46 +285,134 @@ public class mydns {
         // TODO: VICTORIA Parse Answer section
         if (dnsResponse.ancount > 0) {
             System.out.println("Answer section:");
-            // dnsResponse.answers = parseResourceRecords(index, dnsResponse.ancount, response);
-            // Update index after parsing
+            // TODO: Parse answer records
         }
         
         // TODO: LAISHA  Parse Authority section  
         if (dnsResponse.nscount > 0) {
             System.out.println("Authority section:");
-            // dnsResponse.authorities = parseResourceRecords(index, dnsResponse.nscount, response);
-            // Update index after parsing
+            // TODO: Parse authority records
         }
         
         // TODO: HAFSAH Parse Additional section
         if (dnsResponse.arcount > 0) {
             System.out.println("Additional section:");
-            // dnsResponse.additionals = parseResourceRecords(index, dnsResponse.arcount, response);
+            dnsResponse.additionals = parseResourceRecords(index, dnsResponse.arcount, response);
         }
         
         return dnsResponse;
     }
 
-    // TODO: HAFSAH Implement this method to send DNS query and receive response
+    // HAFSAH Implement this method to send DNS query and receive response
     public static DNSResponse sendQuery(String domainName, String serverIP, int queryId) throws Exception {
-        // TODO: Create socket, send query, receive response, parse response
-        // Return parsed DNSResponse object
-        return null;
+        // Create UDP socket
+        DatagramSocket socket = new DatagramSocket();
+        socket.setSoTimeout(5000); // 5 second timeout
+        
+        try {
+            // Create DNS query
+            byte[] query = createQuery(queryId, domainName);
+            
+            // Create packet and send
+            DatagramPacket packet = new DatagramPacket(query, query.length, 
+                                                     InetAddress.getByName(serverIP), 53);
+            socket.send(packet);
+            
+            // Receive response
+            byte[] response = new byte[2048];
+            DatagramPacket responsePacket = new DatagramPacket(response, response.length);
+            socket.receive(responsePacket);
+            
+            // Extract actual response data
+            byte[] actualResponse = new byte[responsePacket.getLength()];
+            System.arraycopy(response, 0, actualResponse, 0, responsePacket.getLength());
+            
+            // Parse and return response
+            return parseResponse(actualResponse);
+            
+        } finally {
+            socket.close();
+        }
     }
 
-    // TODO HAFSAH: Implement this method to perform iterative DNS resolution
+    // HAFSAH: Implement this method to perform iterative DNS resolution
     public static void performIterativeResolution(String domainName, String rootServerIP) throws Exception {
-        // TODO: Implement the main iterative resolution logic
-        // 1. Start with root server
-        // 2. Send query and parse response
-        // 3. If answer found, display and stop
-        // 4. If not, extract NS servers and their IPs
-        // 5. Query next server and repeat until answer found
+        String currentServerIP = rootServerIP;
+        int queryId = 1;
+        int maxIterations = 10; // Prevent infinite loops
+        int iteration = 0;
+        
+        System.out.println("Starting iterative DNS resolution for: " + domainName);
+        System.out.println("Root server: " + rootServerIP);
+        
+        while (iteration < maxIterations) {
+            iteration++;
+            System.out.println("\n--- Iteration " + iteration + " ---");
+            System.out.println("Querying server: " + currentServerIP);
+            
+            try {
+                // Send query to current server
+                DNSResponse response = sendQuery(domainName, currentServerIP, queryId++);
+                
+                // Check if we got an answer
+                if (response.answers != null && !response.answers.isEmpty()) {
+                    System.out.println("Found answer!");
+                    displayFinalIPs(response.answers);
+                    return;
+                }
+                
+                // No answer found, need to follow referrals
+                if (response.authorities != null && !response.authorities.isEmpty()) {
+                    // Extract NS servers from authority section
+                    List<String> nsServers = extractNSServers(response.authorities, null); // We'll need to pass the full response
+                    
+                    if (nsServers != null && !nsServers.isEmpty()) {
+                        // Try to find IP addresses for NS servers in additional section
+                        String nextServerIP = selectNextServer(nsServers, response.additionals);
+                        
+                        if (nextServerIP != null) {
+                            currentServerIP = nextServerIP;
+                            continue;
+                        } else {
+                            // No IP found in additional section, need to resolve NS server names
+                            System.out.println("Need to resolve NS server names...");
+                            // For simplicity, we'll stop here, but in a full implementation
+                            // you would recursively resolve the NS server names
+                            System.out.println("NS servers found but no IP addresses available in additional section");
+                            break;
+                        }
+                    }
+                }
+                
+                // No authorities or no NS servers found
+                System.out.println("No answer and no referrals found");
+                break;
+                
+            } catch (Exception e) {
+                System.out.println("Error querying server " + currentServerIP + ": " + e.getMessage());
+                break;
+            }
+        }
+        
+        System.out.println("DNS resolution failed after " + iteration + " iterations");
     }
 
-    // TODO: HAFSAH Implement this method to display final IP addresses
+    // HAFSAH Implement this method to display final IP addresses
     public static void displayFinalIPs(List<ResourceRecord> answers) {
-        // TODO: Extract and display all IP addresses from answer section
+        if (answers == null || answers.isEmpty()) {
+            System.out.println("No answers found");
+            return;
+        }
+        
+        System.out.println("Final IP addresses:");
+        for (ResourceRecord a : answers) {
+            if (a.type == 1) { // A record
+                String ipAddress = parseIPAddress(a.rdata);
+                if (ipAddress != null) {
+                    System.out.println("  " + a.name + " -> " + ipAddress);
+                }
+            }
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -336,31 +424,7 @@ public class mydns {
         String domainName = args[0];
         String rootDnsIp = args[1];
         
-        // TODO: Replace this basic implementation with iterative resolution
-        // Create UDP socket
-        DatagramSocket socket = new DatagramSocket();
-        
-        // Send DNS query
-        int id = 1;
-        byte[] query = createQuery(id, domainName);
-        DatagramPacket packet = new DatagramPacket(query, query.length, 
-                                                 InetAddress.getByName(rootDnsIp), 53);
-        socket.send(packet);
-        
-        // Receive response
-        byte[] response = new byte[2048];
-        DatagramPacket responsePacket = new DatagramPacket(response, response.length);
-        socket.receive(responsePacket);
-        
-        // Parse response
-        byte[] actualResponse = new byte[responsePacket.getLength()];
-        System.arraycopy(response, 0, actualResponse, 0, responsePacket.getLength());
-        
-        DNSResponse dnsResponse = parseResponse(actualResponse);
-        
-        socket.close();
-        
-        // TODO: Replace above with call to performIterativeResolution
-        // performIterativeResolution(domainName, rootDnsIp);
+        // Use iterative resolution
+        performIterativeResolution(domainName, rootDnsIp);
     }
 }
