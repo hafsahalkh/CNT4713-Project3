@@ -180,11 +180,7 @@ public class mydns {
     // TODO: VICTORIA Implement this method to parse a single resource record
     // Should parse NAME, TYPE, CLASS, TTL, RDLENGTH, and RDATA
     public static ResourceRecord parseResourceRecord(int index, byte[] response) {
-        // TODO: Parse resource record starting at index
-        // Return ResourceRecord object with parsed data
-        return null;
-    }
-        
+
         NameResult nameResult = parseName(index, response); //using the index and response to parse the name
         String name = nameResult.name; //storing the name result
         int currentIndex = nameResult.nextIndex; //storing the current index
@@ -213,13 +209,10 @@ public class mydns {
     
         ResourceRecord resourceRecord = new ResourceRecord(name, type, rrClass, ttl, rdLength, rdata);//creating object
         return resourceRecord;//returning resourceRecord
-}
+    }
 
-    // TODO: VICTORIA Implement this method to parse all resource records in a section
+     // TODO: VICTORIA Implement this method to parse all resource records in a section
     public static List<ResourceRecord> parseResourceRecords(int index, int count, byte[] response) {
-        // TODO: Parse 'count' number of resource records starting at index
-        // Return list of ResourceRecord objects and update index
-        return null;
         List<ResourceRecord> records = new ArrayList<>();//creating records array list
         int currentIndex = index;//creating current index value
         
@@ -336,7 +329,7 @@ public class mydns {
             // Update index after parsing
         }
 
-        // TODO: HAFSAH Parse Additional section
+        // HAFSAH Parse Additional section
         if (dnsResponse.arcount > 0) {
             System.out.println("Additional section:");
             dnsResponse.additionals = parseResourceRecords(index, dnsResponse.arcount, response);
@@ -345,7 +338,7 @@ public class mydns {
         return dnsResponse;
     }
 
-    // TODO: HAFSAH Implement this method to send DNS query and receive response
+    // HAFSAH Implement this method to send DNS query and receive response
     public static DNSResponse sendQuery(String domainName, String serverIP, int queryId) throws Exception {
         // Create UDP socket
         DatagramSocket socket = new DatagramSocket();
@@ -375,7 +368,7 @@ public class mydns {
         }
     }
 
-    // TODO HAFSAH: Implement this method to perform iterative DNS resolution
+    // HAFSAH: Implement this method to perform iterative DNS resolution
     public static void performIterativeResolution(String domainName, String rootServerIP) throws Exception {
         String currentServerIP = rootServerIP;
         int queryId = 1;
@@ -439,3 +432,4 @@ public class mydns {
         // Replace basic implementation with iterative resolution
         performIterativeResolution(domainName, rootDnsIp);
     }
+}
