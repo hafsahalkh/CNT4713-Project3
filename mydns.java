@@ -225,10 +225,16 @@ public class mydns {
         return records;
     }
 
-    // TODO: VICTORIA Implement this method to convert IP address from RDATA to string format
-    public static String parseIPAddress(byte[] rdata) {
-        // TODO: Convert 4-byte IPv4 address to dotted decimal notation
-        return null;
+    //TODO: Victoria to parse IP Address
+    public static String parseIPAddress(byte[] rdata) { //method to parse IPAddress
+        int first = rdata[0]; //parsing first set
+        int second = rdata[1]; //parsing second set
+        int third = rdata[2]; //parsing third set
+        int fourth = rdata[3]; //parsing fourth set
+    
+        String IPAddress = first + "." + second + "." + third + "." + fourth;//combining sets with the periods
+    
+        return IPAddress;//returning the final parsend IPAddress with periods
     }
 
     // TODO: LAISHA Implement this method to extract domain name from RDATA for NS records
@@ -318,8 +324,9 @@ public class mydns {
         // TODO: VICTORIA Parse Answer section
         if (dnsResponse.ancount > 0) {
             System.out.println("Answer section:");
-            // dnsResponse.answers = parseResourceRecords(index, dnsResponse.ancount, response);
-            // Update index after parsing
+            dnsResponse.answers = parseResourceRecords(index, dnsResponse.ancount, response);
+
+            //update index after parsing
         }
 
         // TODO: LAISHA  Parse Authority section  
