@@ -325,8 +325,8 @@ public class mydns {
         if (dnsResponse.ancount > 0) {
             System.out.println("Answer section:");
             dnsResponse.answers = parseResourceRecords(index, dnsResponse.ancount, response);
-
-            //update index after parsing
+        }  
+        return dnsResponse
         }
 
         // TODO: LAISHA  Parse Authority section  
