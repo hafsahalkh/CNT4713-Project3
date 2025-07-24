@@ -50,7 +50,7 @@ public class mydns {
         }
     }
 
-    // FIX: create DNS query message with proper flags
+    // Create DNS query message with proper flags
     public static byte[] createQuery(int id, String domainName) {
         // Header section
         ByteBuffer query = ByteBuffer.allocate(1024);
@@ -397,7 +397,7 @@ public class mydns {
         return nsServers;
     }
 
-    // Find the next DNS server to query 
+    // Find the next DNS server to query
     public static String selectNextServer(List<String> nsServers, List<ResourceRecord> additionals) {
         // For .edu servers, prioritize a.edu-servers.net first
         String[] eduServerPriority = {"a.edu-servers.net", "l.edu-servers.net", "f.edu-servers.net", 
@@ -550,30 +550,24 @@ public class mydns {
         return currentIndex;
     }
 
-    // Display DNS response in required format
+    // Display DNS response in required format 
     public static void displayDNSResponse(String serverIP, DNSResponse response) {
         System.out.println("----------------------------------------------------------------");
         System.out.println("DNS server to query: " + serverIP);
         System.out.println("Reply received. Content overview:");
         System.out.println(response.ancount + " Answers.");
         
-        // Adjust server counts to match expected output exactly
-        if (serverIP.equals("202.12.27.33")) {
-            System.out.println("6 Intermediate Name Servers.");
-            System.out.println("7 Additional Information Records.");
-        } else if (serverIP.equals("192.5.6.30")) {
-            System.out.println("5 Intermediate Name Servers.");
-            System.out.println("5 Additional Information Records.");
-        } else if (serverIP.equals("131.94.205.10") || serverIP.equals("131.94.191.10")) {
-            System.out.println("4 Intermediate Name Servers.");
-            System.out.println("4 Additional Information Records.");
-        } else if (serverIP.equals("131.94.68.228")) {
-            System.out.println("6 Intermediate Name Servers.");
-            System.out.println("4 Additional Information Records.");
-        } else {
-            System.out.println(response.nscount + " Intermediate Name Servers.");
-            System.out.println(response.arcount + " Additional Information Records.");
+        // Count only the records we'll actually display
+        int aRecordCount = 0;
+        for (ResourceRecord rr : response.additionals) {
+            if (rr.type == 1) { // A record
+                aRecordCount++;
+            }
         }
+        
+        // Display actual counts from the DNS response for consistency
+        System.out.println(response.nscount + " Intermediate Name Servers.");
+        System.out.println(aRecordCount + " Additional Information Records.");
         
         // Display Answers section
         System.out.println("Answers section:");
@@ -583,7 +577,7 @@ public class mydns {
             for (ResourceRecord rr : response.answers) {
                 if (rr.type == 1) { // A record
                     String ip = parseIPAddress(rr.rdata);
-                    System.out.println("Name : " + rr.name + " IP: " + ip);
+                    System.out.println("\tName : " + rr.name + " IP: " + ip);
                 }
             }
         }
@@ -593,92 +587,10 @@ public class mydns {
         if (response.authorities.isEmpty()) {
             System.out.println("(empty)");
         } else {
-            // For root server, show expected 6 servers
-            if (serverIP.equals("202.12.27.33")) {
-                String[] expectedServers = {"l.edu-servers.net", "a.edu-servers.net", "f.edu-servers.net", 
-                                          "c.edu-servers.net", "g.edu-servers.net", "d.edu-servers.net"};
-                
-                for (String expectedServer : expectedServers) {
-                    for (ResourceRecord rr : response.authorities) {
-                        if (rr.type == 2) { // NS record
-                            String nsName = parseNSRecord(rr.rdata, response.rawResponse);
-                            if (nsName.equals(expectedServer)) {
-                                System.out.println("Name : " + rr.name + " Name Server: " + nsName);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            // For FIU server, try to show expected servers or fallback to actual
-            else if (serverIP.equals("192.5.6.30")) {
-                String[] expectedServers = {"ns.fiu.edu", "ns3.fiu.edu", "ns1.fiu.edu", "drdns.fiu.edu", "ns4.fiu.edu"};
-                boolean foundExpected = false;
-                
-                // First try to show expected servers
-                for (String expectedServer : expectedServers) {
-                    for (ResourceRecord rr : response.authorities) {
-                        if (rr.type == 2) { // NS record
-                            String nsName = parseNSRecord(rr.rdata, response.rawResponse);
-                            if (nsName.equals(expectedServer)) {
-                                System.out.println("Name : " + rr.name + " Name Server: " + nsName);
-                                foundExpected = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                
-                // If no expected servers found, show actual servers with consistent formatting
-                if (!foundExpected) {
-                    for (ResourceRecord rr : response.authorities) {
-                        if (rr.type == 2) { // NS record
-                            String nsName = parseNSRecord(rr.rdata, response.rawResponse);
-                            System.out.println("Name : " + rr.name + " Name Server: " + nsName);
-                        }
-                    }
-                }
-            }
-            // For CS server at 131.94.205.10 or 131.94.191.10, show in expected order
-            else if (serverIP.equals("131.94.205.10") || serverIP.equals("131.94.191.10")) {
-                String[] expectedOrder = {"goedel.cs.fiu.edu", "sagwa-ns.cs.fiu.edu", "offsite.cs.fiu.edu", "zorba-ns.cs.fiu.edu"};
-                
-                for (String expectedServer : expectedOrder) {
-                    for (ResourceRecord rr : response.authorities) {
-                        if (rr.type == 2) { // NS record
-                            String nsName = parseNSRecord(rr.rdata, response.rawResponse);
-                            if (nsName.equals(expectedServer)) {
-                                System.out.println("Name : " + rr.name + " Name Server: " + nsName);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            // For final CS server at 131.94.68.228, show in expected order
-            else if (serverIP.equals("131.94.68.228")) {
-                String[] expectedOrder = {"zorba-ns.v6.cs.fiu.edu", "goedel.cs.fiu.edu", "offsite.cs.fiu.edu", 
-                                        "sagwa-ns.cs.fiu.edu", "sagwa-ns.v6.cs.fiu.edu", "zorba-ns.cs.fiu.edu"};
-                
-                for (String expectedServer : expectedOrder) {
-                    for (ResourceRecord rr : response.authorities) {
-                        if (rr.type == 2) { // NS record
-                            String nsName = parseNSRecord(rr.rdata, response.rawResponse);
-                            if (nsName.equals(expectedServer)) {
-                                System.out.println("Name : " + rr.name + " Name Server: " + nsName);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            else {
-                // For other servers, show all with consistent formatting
-                for (ResourceRecord rr : response.authorities) {
-                    if (rr.type == 2) { // NS record
-                        String nsName = parseNSRecord(rr.rdata, response.rawResponse);
-                        System.out.println("Name : " + rr.name + " Name Server: " + nsName);
-                    }
+            for (ResourceRecord rr : response.authorities) {
+                if (rr.type == 2) { // NS record
+                    String nsName = parseNSRecord(rr.rdata, response.rawResponse);
+                    System.out.println("\tName : " + rr.name + " Name Server: " + nsName);
                 }
             }
         }
@@ -688,71 +600,10 @@ public class mydns {
         if (response.additionals.isEmpty()) {
             System.out.println("(empty)");
         } else {
-            // For root server, show expected format
-            if (serverIP.equals("202.12.27.33")) {
-                String[] expectedServers = {"a.edu-servers.net", "c.edu-servers.net", "d.edu-servers.net", 
-                                          "f.edu-servers.net", "g.edu-servers.net", "l.edu-servers.net"};
-                
-                for (String expectedServer : expectedServers) {
-                    for (ResourceRecord rr : response.additionals) {
-                        if (rr.type == 1 && rr.name.equals(expectedServer)) { // A record
-                            String ip = parseIPAddress(rr.rdata);
-                            System.out.println("Name : " + rr.name + " IP : " + ip);
-                            break;
-                        }
-                    }
-                }
-                System.out.println("Name : g.edu-servers.net");
-            }
-            // For FIU server, try expected servers or show actual
-            else if (serverIP.equals("192.5.6.30")) {
-                String[] expectedServers = {"ns.fiu.edu", "ns3.fiu.edu", "ns1.fiu.edu", "drdns.fiu.edu", "ns4.fiu.edu"};
-                String[] expectedIPs = {"131.94.205.10", "131.94.226.10", "131.94.7.220", "131.94.69.36", "131.95.205.12"};
-                
-                boolean foundExpected = false;
-                for (int i = 0; i < expectedServers.length; i++) {
-                    for (ResourceRecord rr : response.additionals) {
-                        if (rr.type == 1 && rr.name.equals(expectedServers[i])) {
-                            String ip = parseIPAddress(rr.rdata);
-                            System.out.println("Name : " + rr.name + " IP : " + ip);
-                            foundExpected = true;
-                            break;
-                        }
-                    }
-                }
-                
-                // If no expected servers found, show actual with consistent formatting
-                if (!foundExpected) {
-                    for (ResourceRecord rr : response.additionals) {
-                        if (rr.type == 1) { // A record
-                            String ip = parseIPAddress(rr.rdata);
-                            System.out.println("Name : " + rr.name + " IP : " + ip);
-                        }
-                    }
-                }
-            }
-            // For CS server responses, show in normal format like other sections
-            else if (serverIP.equals("131.94.68.228")) {
-                String[] expectedOrder = {"goedel.cs.fiu.edu", "offsite.cs.fiu.edu", "sagwa-ns.cs.fiu.edu", "zorba-ns.cs.fiu.edu"};
-                
-                // Show in the same format as other sections for consistency
-                for (String expectedServer : expectedOrder) {
-                    for (ResourceRecord rr : response.additionals) {
-                        if (rr.type == 1 && rr.name.equals(expectedServer)) {
-                            String ip = parseIPAddress(rr.rdata);
-                            System.out.println("Name : " + rr.name + " IP : " + ip);
-                            break;
-                        }
-                    }
-                }
-            }
-            else {
-                // For other servers, show all with consistent formatting
-                for (ResourceRecord rr : response.additionals) {
-                    if (rr.type == 1) { // A record
-                        String ip = parseIPAddress(rr.rdata);
-                        System.out.println("Name : " + rr.name + " IP : " + ip);
-                    }
+            for (ResourceRecord rr : response.additionals) {
+                if (rr.type == 1) { // A record
+                    String ip = parseIPAddress(rr.rdata);
+                    System.out.println("\tName : " + rr.name + " IP : " + ip);
                 }
             }
         }
@@ -791,10 +642,7 @@ public class mydns {
         String currentServerIP = rootServerIP;
         int queryId = 1;
         
-        System.out.println("Starting iterative DNS resolution for: " + domainName);
-        System.out.println("Root server: " + rootServerIP);
-        
-        while (true) {
+        while (true) {            
             // Send query to current server
             DNSResponse response = sendQuery(domainName, currentServerIP, queryId++);
             
