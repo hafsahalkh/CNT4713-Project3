@@ -550,7 +550,7 @@ public class mydns {
         return currentIndex;
     }
 
-    // Display DNS response in required format - ENHANCED to match expected output exactly
+    // Display DNS response in required format
     public static void displayDNSResponse(String serverIP, DNSResponse response) {
         System.out.println("----------------------------------------------------------------");
         System.out.println("DNS server to query: " + serverIP);
